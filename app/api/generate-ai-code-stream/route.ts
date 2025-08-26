@@ -10,6 +10,7 @@ import { executeSearchPlan, formatSearchResultsForAI, selectTargetFile } from '@
 import { FileManifest } from '@/types/file-manifest';
 import type { ConversationState, ConversationMessage, ConversationEdit } from '@/types/conversation';
 import { appConfig } from '@/config/app.config';
+import { SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT, getSystemPrompt } from '@/lib/system-prompts';
 
 const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
@@ -72,9 +73,59 @@ declare global {
   var conversationState: ConversationState | null;
 }
 
+// Safety check for harmful content
+function containsHarmfulContent(prompt: string): { isHarmful: boolean; reason?: string; suggestion?: string } {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Gambling and financial fraud patterns
+  if (lowerPrompt.match(/\b(gambling|casino|betting|poker|slots|roulette|blackjack|lottery|crypto\s*scam|ponzi|pyramid\s*scheme)\b/)) {
+    return {
+      isHarmful: true,
+      reason: 'gambling or financial fraud',
+      suggestion: 'Try creating an educational finance tracker or budget management app instead.'
+    };
+  }
+  
+  // Malware and hacking patterns
+  if (lowerPrompt.match(/\b(malware|virus|keylogger|trojan|ransomware|exploit|hack|phishing|credential\s*stuffing|ddos|botnet)\b/)) {
+    return {
+      isHarmful: true,
+      reason: 'malicious software or hacking',
+      suggestion: 'Consider building a cybersecurity awareness app or security checklist tool instead.'
+    };
+  }
+  
+  // Hate speech and abuse patterns
+  if (lowerPrompt.match(/\b(hate\s*speech|harassment|doxx|revenge\s*porn|abuse)\b/)) {
+    return {
+      isHarmful: true,
+      reason: 'harmful or abusive content',
+      suggestion: 'Try creating a community support platform or mental health resources app instead.'
+    };
+  }
+  
+  return { isHarmful: false };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { prompt, model = 'openai/gpt-oss-20b', context, isEdit = false } = await request.json();
+    
+    // Safety check for harmful content
+    const safetyCheck = containsHarmfulContent(prompt);
+    if (safetyCheck.isHarmful) {
+      console.log('[generate-ai-code-stream] Blocked harmful request:', safetyCheck.reason);
+      return new NextResponse(
+        JSON.stringify({ 
+          error: `I cannot help with ${safetyCheck.reason}. ${safetyCheck.suggestion}`,
+          type: 'safety_violation'
+        }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
     
     console.log('[generate-ai-code-stream] Received request:');
     console.log('[generate-ai-code-stream] - prompt:', prompt);
@@ -550,11 +601,19 @@ Remember: You are a SURGEON making a precise incision, not an artist repainting 
           }
         }
         
-        // Build system prompt with conversation awareness
-        const systemPrompt = `You are an expert React developer with perfect memory of the conversation. You maintain context across messages and remember scraped websites, generated components, and applied code. Generate clean, modern React code for Vite applications.
+        // Build enhanced system prompt with conversation awareness
+        const baseSystemPrompt = getSystemPrompt({
+          performanceFocus: true,
+          includeTeamLead: true,
+          allowLongCodeByDefault: false
+        });
+
+        const systemPrompt = `${baseSystemPrompt}
+
+CONVERSATION CONTEXT & MEMORY:
 ${conversationContext}
 
-🚨 CRITICAL RULES - YOUR MOST IMPORTANT INSTRUCTIONS:
+🚨 CRITICAL ZAPDEV RULES - YOUR MOST IMPORTANT INSTRUCTIONS:
 1. **DO EXACTLY WHAT IS ASKED - NOTHING MORE, NOTHING LESS**
    - Don't add features not requested
    - Don't fix unrelated issues
@@ -1175,6 +1234,16 @@ CRITICAL: When files are provided in the context:
 4. NEVER leave incomplete class names or attributes
 5. ALWAYS close ALL tags, quotes, brackets, and parentheses
 6. If you run out of space, prioritize completing the current file
+
+⚡ PERFORMANCE OPTIMIZATION RULES:
+1. Use React.memo() for expensive components that re-render frequently
+2. Use useCallback() and useMemo() for expensive calculations
+3. Prefer CSS classes over inline styles to avoid re-renders
+4. Use proper key props for lists to optimize reconciliation
+5. Lazy load components with React.lazy() when appropriate
+6. Avoid creating objects/arrays in render functions
+7. Use stable references for event handlers
+8. Implement proper loading states to improve perceived performance
 
 CRITICAL STRING RULES TO PREVENT SYNTAX ERRORS:
 - NEVER write: className="px-8 py-4 bg-black text-white font-bold neobrut-border neobr...

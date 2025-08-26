@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,13 +16,13 @@ interface BraveSearchProps {
   onSearch?: (query: string) => void;
 }
 
-export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps) {
+const BraveSearch = memo(function BraveSearch({ searchQuery, onSearch }: BraveSearchProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSearchQuery, setLastSearchQuery] = useState('');
 
-  const performSearch = async (query: string) => {
+  const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
     
     setIsSearching(true);
@@ -54,38 +54,41 @@ export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps)
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     performSearch(searchQuery);
     onSearch?.(searchQuery);
-  };
+  }, [searchQuery, onSearch, performSearch]);
 
   return (
     <div className="w-full">
-      {/* Search Button - Always Visible */}
+      {/* Search Button - Minimalist Design */}
       <div className="mb-4">
         <Button
           onClick={handleSearch}
           disabled={!searchQuery.trim() || isSearching}
-          className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-none hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
+          variant="outline"
+          className="group relative bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 shadow-sm hover:shadow-md"
         >
-          {isSearching ? (
-            <>
+          <div className="flex items-center gap-2">
+            {isSearching ? (
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="mr-2"
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="text-blue-600 dark:text-blue-400"
               >
                 🔍
               </motion.div>
-              Searching...
-            </>
-          ) : (
-            <>
-              🦁 Search Web with Brave
-            </>
-          )}
+            ) : (
+              <span className="text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                🔍
+              </span>
+            )}
+            <span className="font-medium">
+              {isSearching ? 'Searching...' : 'Search Web'}
+            </span>
+          </div>
         </Button>
       </div>
 
@@ -100,13 +103,13 @@ export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps)
             className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             {/* Header */}
-            <div className="p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🦁</span>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <span className="text-xl text-blue-600 dark:text-blue-400">🔍</span>
                 <div>
-                  <h3 className="font-semibold text-lg">Brave Search Results</h3>
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">Search Results</h3>
                   {lastSearchQuery && (
-                    <p className="text-orange-100 text-sm">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
                       "{lastSearchQuery}"
                     </p>
                   )}
@@ -145,7 +148,7 @@ export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps)
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 border-l-4 border-transparent hover:border-orange-500"
+                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all duration-200 border-l-2 border-transparent hover:border-blue-500 dark:hover:border-blue-400"
                     onClick={() => window.open(result.url, '_blank')}
                   >
                     <h4 className="font-semibold text-blue-600 dark:text-blue-400 hover:underline mb-1 text-lg">
@@ -174,7 +177,7 @@ export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps)
             {/* Footer */}
             <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-center">
               <p className="text-xs text-gray-500">
-                🦁 Powered by Brave Search API • Privacy-focused web search
+                Powered by Brave Search API • Privacy-focused web search
               </p>
             </div>
           </motion.div>
@@ -182,4 +185,6 @@ export default function BraveSearch({ searchQuery, onSearch }: BraveSearchProps)
       </AnimatePresence>
     </div>
   );
-}
+});
+
+export default BraveSearch;

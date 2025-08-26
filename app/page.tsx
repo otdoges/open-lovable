@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { appConfig } from '@/config/app.config';
 import { Button } from '@/components/ui/button';
@@ -65,6 +65,10 @@ export default function AISandboxPage() {
     const modelParam = searchParams.get('model');
     return appConfig.ai.availableModels.includes(modelParam || '') ? modelParam! : appConfig.ai.defaultModel;
   });
+
+  // Memoize available models to prevent unnecessary re-renders
+  const availableModels = useMemo(() => appConfig.ai.availableModels, []);
+  const modelDisplayNames = useMemo(() => appConfig.ai.modelDisplayNames, []);
   const [urlOverlayVisible, setUrlOverlayVisible] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<string[]>([]);
@@ -238,15 +242,15 @@ export default function AISandboxPage() {
   }, [chatMessages]);
 
 
-  const updateStatus = (text: string, active: boolean) => {
+  const updateStatus = useCallback((text: string, active: boolean) => {
     setStatus({ text, active });
-  };
+  }, []);
 
-  const log = (message: string, type: 'info' | 'error' | 'command' = 'info') => {
+  const log = useCallback((message: string, type: 'info' | 'error' | 'command' = 'info') => {
     setResponseArea(prev => [...prev, `[${type}] ${message}`]);
-  };
+  }, []);
 
-  const addChatMessage = (content: string, type: ChatMessage['type'], metadata?: ChatMessage['metadata']) => {
+  const addChatMessage = useCallback((content: string, type: ChatMessage['type'], metadata?: ChatMessage['metadata']) => {
     setChatMessages(prev => {
       // Skip duplicate consecutive system messages
       if (type === 'system' && prev.length > 0) {
@@ -257,7 +261,7 @@ export default function AISandboxPage() {
       }
       return [...prev, { content, type, timestamp: new Date(), metadata }];
     });
-  };
+  }, []);
   
   const checkAndInstallPackages = async () => {
     if (!sandboxData) {
@@ -1952,7 +1956,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
     }
   }, [generationProgress.streamedCode, generationProgress.isStreaming]);
 
-  const toggleFolder = (folderPath: string) => {
+  const toggleFolder = useCallback((folderPath: string) => {
     const newExpanded = new Set(expandedFolders);
     if (newExpanded.has(folderPath)) {
       newExpanded.delete(folderPath);
@@ -1960,14 +1964,14 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       newExpanded.add(folderPath);
     }
     setExpandedFolders(newExpanded);
-  };
+  }, [expandedFolders]);
 
-  const handleFileClick = async (filePath: string) => {
+  const handleFileClick = useCallback(async (filePath: string) => {
     setSelectedFile(filePath);
     // TODO: Add file content fetching logic here
-  };
+  }, []);
 
-  const getFileIcon = (fileName: string) => {
+  const getFileIcon = useCallback((fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     
     if (ext === 'jsx' || ext === 'js') {
@@ -1981,15 +1985,15 @@ Tip: I automatically detect and install npm packages from your code imports (lik
     } else {
       return <FiFile className="w-4 h-4 text-gray-600" />;
     }
-  };
+  }, []);
 
-  const clearChatHistory = () => {
+  const clearChatHistory = useCallback(() => {
     setChatMessages([{
       content: 'Chat history cleared. How can I help you?',
       type: 'system',
       timestamp: new Date()
     }]);
-  };
+  }, []);
 
 
   const cloneWebsite = async () => {

@@ -1,6 +1,7 @@
 import { FileManifest, EditIntent, EditType } from '@/types/file-manifest';
 import { analyzeEditIntent } from '@/lib/edit-intent-analyzer';
 import { getEditExamplesPrompt, getComponentPatternPrompt } from '@/lib/edit-examples';
+import { getSystemPrompt } from '@/lib/system-prompts';
 
 export interface FileContext {
   primaryFiles: string[]; // Files to edit
@@ -80,7 +81,14 @@ function buildSystemPrompt(
   contextFiles: string[],
   manifest: FileManifest
 ): string {
-  const sections: string[] = [];
+  // Start with the production-grade system prompt
+  const baseSystemPrompt = getSystemPrompt({
+    performanceFocus: true,
+    includeTeamLead: false,
+    allowLongCodeByDefault: false
+  });
+
+  const sections: string[] = [baseSystemPrompt];
   
   // Add edit examples first for better understanding
   if (editIntent.type !== EditType.FULL_REBUILD) {
