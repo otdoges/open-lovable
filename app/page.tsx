@@ -22,6 +22,7 @@ import {
 } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeApplicationProgress, { type CodeApplicationState } from '@/components/CodeApplicationProgress';
+import BraveSearch from '@/components/BraveSearch';
 
 interface SandboxData {
   sandboxId: string;
@@ -1407,7 +1408,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
               ref={iframeRef}
               src={sandboxData.url}
               className="w-full h-full border-none"
-              title="Open Lovable Sandbox"
+              title="ZapDev Sandbox"
               allow="clipboard-write"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             />
@@ -2792,7 +2793,7 @@ Focus on the key sections and content, making it clean and modern.`;
               className="h-8 w-auto"
             />
             <a 
-              href="https://github.com/mendableai/open-lovable" 
+              href="https://github.com/mendableai/zapdev" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#36322F] text-white px-3 py-2 rounded-[10px] text-sm font-medium [box-shadow:inset_0px_-2px_0px_0px_#171310,_0px_1px_6px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] transition-all duration-200"
@@ -2808,8 +2809,8 @@ Focus on the key sections and content, making it clean and modern.`;
               {/* Firecrawl-style Header */}
               <div className="text-center">
                 <h1 className="text-[2.5rem] lg:text-[3.8rem] text-center text-[#36322F] font-semibold tracking-tight leading-[0.9] animate-[fadeIn_0.8s_ease-out]">
-                  <span className="hidden md:inline">Open Lovable</span>
-                  <span className="md:hidden">Open Lovable</span>
+                  <span className="hidden md:inline">ZapDev</span>
+                  <span className="md:hidden">ZapDev</span>
                 </h1>
                 <motion.p 
                   className="text-base lg:text-lg max-w-lg mx-auto mt-2.5 text-zinc-500 text-center text-balance"
@@ -3308,6 +3309,17 @@ Focus on the key sections and content, making it clean and modern.`;
           </div>
 
           <div className="p-4 border-t border-border bg-card">
+            {/* Brave Search Component */}
+            <div className="mb-4">
+              <BraveSearch 
+                searchQuery={aiChatInput}
+                onSearch={(query) => {
+                  // Optionally add search to chat history
+                  addChatMessage(`Searched web for: "${query}"`, 'system');
+                }}
+              />
+            </div>
+            
             <div className="relative">
               <Textarea
                 className="min-h-[60px] pr-12 resize-y border-2 border-black focus:outline-none"
