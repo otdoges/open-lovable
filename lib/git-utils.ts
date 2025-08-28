@@ -16,6 +16,12 @@ export interface CloneOptions {
   targetDir: string;
 }
 
+// Strict validation of GitHub owner and repo slugs
+function isValidGitHubSlug(slug: string): boolean {
+  // Only allow alphanumeric, hyphen, underscore, and periods, no slashes/colons/whitespace, length up to 100 chars
+  return /^[A-Za-z0-9._-]{1,100}$/.test(slug);
+}
+
 // Parse Git URL to extract repository information
 export function parseGitUrl(gitUrl: string): GitRepoInfo | null {
   try {
@@ -134,8 +140,13 @@ export async function validateRepository(gitUrl: string, accessToken?: string): 
 }> {
   try {
     const repoInfo = parseGitUrl(gitUrl);
-    if (!repoInfo) {
-      return { exists: false, isPrivate: false, defaultBranch: 'main', error: 'Invalid Git URL' };
+    // Strictly validate owner and repo fields before using in API URL
+    if (
+      !repoInfo ||
+      !isValidGitHubSlug(repoInfo.owner) ||
+      !isValidGitHubSlug(repoInfo.name)
+    ) {
+      return { exists: false, isPrivate: false, defaultBranch: 'main', error: 'Invalid GitHub owner or repository name' };
     }
     
     const apiUrl = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.name}`;
